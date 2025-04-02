@@ -1,0 +1,72 @@
+<div class="resistor-calculator">
+  <h1 class="calculator-title">Kalkulator kodów rezystorów</h1>
+  
+  <div class="calculator-container">
+    <div class="controls-panel">
+      <div class="section">
+        <h2 class="section-title">Liczba pasków</h2>
+        <div class="band-options">
+          <button *ngFor="let count of [4,5,6]" 
+                  [class.active]="bandCount === count"
+                  (click)="bandCount = count; onBandCountChange()">
+            {{count}} Pasków
+          </button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Parametry rezystora</h2>
+        <div *ngFor="let bandType of getActiveBands()" class="color-selector">
+          <label>{{getBandLabel(bandType)}}</label>
+          <select [(ngModel)]="bands[bandType]" (change)="onColorChange()">
+            <option *ngFor="let color of getAvailableColors(bandType)" [value]="color">
+              {{color | titlecase}} <span *ngIf="colorCodes[color].value !== null">- {{colorCodes[color].value}}</span>
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="search-btn">Wyszukaj w katalogu</button>
+        <button class="clear-btn">Wyczyść wybór</button>
+      </div>
+
+      <div class="instructions">
+        <h3>Instrukcje i diagram</h3>
+      </div>
+    </div>
+
+    <div class="result-panel">
+      <div class="resistor-display">
+        <div class="resistor">
+          <div class="resistor-ends left"></div>
+          <div class="resistor-body">
+            <div *ngFor="let bandType of getActiveBands()" 
+                 class="band" 
+                 [style.background]="getColorStyle(bands[bandType])"
+                 [@bandAnimation]></div>
+          </div>
+          <div class="resistor-ends right"></div>
+        </div>
+      </div>
+
+      <div class="result-details">
+        <h3>Wynik</h3>
+        <div class="band-values">
+          <div *ngFor="let bandType of getActiveBands()" class="band-value">
+            <span *ngIf="bandType === 'multiplier'">x{{colorCodes[bands[bandType]].multiplier/1000}} kΩ</span>
+            <span *ngIf="bandType === 'tolerance'">± {{colorCodes[bands[bandType]].tolerance}}%</span>
+            <span *ngIf="bandType !== 'multiplier' && bandType !== 'tolerance'">
+              {{colorCodes[bands[bandType]].value}}
+            </span>
+          </div>
+        </div>
+
+        <div class="final-result">
+          <h3>Wartość rezystora:</h3>
+          <div class="resistance-value">{{result.formatted}} {{result.tolerance}}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
