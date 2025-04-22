@@ -1,38 +1,40 @@
 <div class="resistor-calculator">
-  <h1 class="calculator-title">Kalkulator kodów rezystorów</h1>
+  <h1 class="calculator-title">Resistor Color Code Calculator</h1>
   
   <div class="calculator-container">
     <div class="controls-panel">
       <div class="section">
-        <h2 class="section-title">Liczba pasków</h2>
+        <h2 class="section-title">Number of Bands</h2>
         <div class="band-options">
           <button *ngFor="let count of [4,5,6]" 
                   [class.active]="bandCount === count"
                   (click)="bandCount = count; onBandCountChange()">
-            {{count}} Pasków
+            {{count}}-Band
           </button>
         </div>
       </div>
 
       <div class="section">
-        <h2 class="section-title">Parametry rezystora</h2>
+        <h2 class="section-title">Resistor Parameters</h2>
+        <div class="resistance-input">
+          <label>Resistor Value:</label>
+          <input type="text" [(ngModel)]="manualResistance" (ngModelChange)="findResistorFromValue()" 
+                 placeholder="e.g. 10k, 4.7M, 100R" />
+        </div>
         <div *ngFor="let bandType of getActiveBands()" class="color-selector">
           <label>{{getBandLabel(bandType)}}</label>
           <select [(ngModel)]="bands[bandType]" (change)="onColorChange()">
             <option *ngFor="let color of getAvailableColors(bandType)" [value]="color">
-              {{color | titlecase}} <span *ngIf="colorCodes[color].value !== null">- {{colorCodes[color].value}}</span>
+              {{color | titlecase}} <span *ngIf="colorCodes[color].value !== null">({{colorCodes[color].value}})</span>
+              <span *ngIf="colorCodes[color].tolerance !== null">±{{colorCodes[color].tolerance}}%</span>
+              <span *ngIf="colorCodes[color].tempCoeff !== null">{{colorCodes[color].tempCoeff}}ppm/°C</span>
             </option>
           </select>
         </div>
       </div>
 
       <div class="action-buttons">
-        <button class="search-btn">Wyszukaj w katalogu</button>
-        <button class="clear-btn">Wyczyść wybór</button>
-      </div>
-
-      <div class="instructions">
-        <h3>Instrukcje i diagram</h3>
+        <button class="clear-btn" (click)="clearSelection()">Clear</button>
       </div>
     </div>
 
@@ -51,20 +53,26 @@
       </div>
 
       <div class="result-details">
-        <h3>Wynik</h3>
-        <div class="band-values">
-          <div *ngFor="let bandType of getActiveBands()" class="band-value">
-            <span *ngIf="bandType === 'multiplier'">x{{colorCodes[bands[bandType]].multiplier/1000}} kΩ</span>
-            <span *ngIf="bandType === 'tolerance'">± {{colorCodes[bands[bandType]].tolerance}}%</span>
-            <span *ngIf="bandType !== 'multiplier' && bandType !== 'tolerance'">
-              {{colorCodes[bands[bandType]].value}}
-            </span>
+        <h3>Resistor Value</h3>
+        <div class="final-result">
+          <div class="resistance-value">{{result.formatted}} ±{{result.tolerance}}%</div>
+          <div *ngIf="result.tempCoeff" class="temp-coeff">
+            Temp. Coefficient: {{result.tempCoeff}} ppm/°C
           </div>
         </div>
 
-        <div class="final-result">
-          <h3>Wartość rezystora:</h3>
-          <div class="resistance-value">{{result.formatted}} {{result.tolerance}}%</div>
+        <div class="band-values">
+          <div *ngFor="let bandType of getActiveBands()" class="band-value">
+            <div class="band-label">{{getBandLabel(bandType)}}</div>
+            <div class="band-info">
+              <span *ngIf="bandType === 'multiplier'">×{{colorCodes[bands[bandType]].multiplier}}</span>
+              <span *ngIf="bandType === 'tolerance'">±{{colorCodes[bands[bandType]].tolerance}}%</span>
+              <span *ngIf="bandType === 'tempCoeff'">{{colorCodes[bands[bandType]].tempCoeff}} ppm/°C</span>
+              <span *ngIf="!['multiplier', 'tolerance', 'tempCoeff'].includes(bandType)">
+                {{colorCodes[bands[bandType]].value}}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

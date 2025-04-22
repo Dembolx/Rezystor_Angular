@@ -37,8 +37,8 @@ export class AppComponent {
     tempCoeff: null,
     formatted: '',
   };
+  manualResistance: string = '';
 
-  // Changed from private to public
   public colorCodes: any = {
     black: { value: 0, multiplier: 1, tolerance: null, tempCoeff: 250 },
     brown: { value: 1, multiplier: 10, tolerance: 1, tempCoeff: 100 },
@@ -60,9 +60,7 @@ export class AppComponent {
     none: { value: null, multiplier: null, tolerance: 20, tempCoeff: null },
   };
 
-  // Changed from private to public
   public bandOptions: any = {
-    3: ['band1', 'band2', 'multiplier', 'tolerance'],
     4: ['band1', 'band2', 'multiplier', 'tolerance'],
     5: ['band1', 'band2', 'band3', 'multiplier', 'tolerance'],
     6: ['band1', 'band2', 'band3', 'multiplier', 'tolerance', 'tempCoeff'],
@@ -173,5 +171,111 @@ export class AppComponent {
       none: 'transparent',
     };
     return colors[color] || '#FFFFFF';
+  }
+
+  findResistorFromValue() {
+    if (!this.manualResistance) return;
+
+    let value = this.parseResistanceValue(this.manualResistance);
+    if (value === null) return;
+
+    const e24series = this.getE24Series();
+    let closest = e24series.reduce((prev: number, curr: number) => {
+      return Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev;
+    });
+
+    let multiplier = 1;
+    while (closest * multiplier < value && multiplier < 1000000000) {
+      multiplier *= 10;
+    }
+    while (closest * multiplier > value * 10 && multiplier > 0.01) {
+      multiplier /= 10;
+    }
+
+    const resistanceValue = closest * multiplier;
+
+    let digits = closest.toString().replace('.', '').split('').map(Number);
+
+    if (this.bandCount >= 4) {
+      this.bands.band1 = this.getColorByValue(digits[0]);
+      this.bands.band2 = this.getColorByValue(digits[1]);
+      if (this.bandCount >= 5 && digits.length > 2) {
+        this.bands.band3 = this.getColorByValue(digits[2]);
+      }
+
+      this.bands.multiplier = this.getColorByMultiplier(multiplier);
+      this.bands.tolerance = 'gold';
+
+      if (this.bandCount === 6) {
+        this.bands.tempCoeff = 'brown';
+      }
+    }
+
+    this.calculate();
+  }
+
+  parseResistanceValue(input: string): number | null {
+    input = input.trim().toLowerCase();
+    input = input.replace(/[^0-9kkmΩω.r]/g, '');
+    input = input.replace(',', '.');
+
+    let multiplier = 1;
+    if (input.includes('k')) {
+      multiplier = 1000;
+      input = input.replace('k', '');
+    } else if (input.includes('m')) {
+      multiplier = 1000000;
+      input = input.replace('m', '');
+    } else if (
+      input.includes('ω') ||
+      input.includes('Ω') ||
+      input.includes('r')
+    ) {
+      input = input.replace(/[ωΩr]/g, '');
+    }
+
+    const numValue = parseFloat(input);
+    if (isNaN(numValue)) return null;
+
+    return numValue * multiplier;
+  }
+
+  getE24Series(): number[] {
+    return [
+      1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9,
+      4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1, 10, 11, 12, 13, 15, 16, 18,
+      20, 22, 24, 27, 30, 33, 36, 39, 43, 47, 51, 56, 62, 68, 75, 82, 91,
+    ];
+  }
+
+  getColorByValue(value: number): string {
+    for (const color in this.colorCodes) {
+      if (this.colorCodes[color].value === value) {
+        return color;
+      }
+    }
+    return 'black';
+  }
+
+  getColorByMultiplier(multiplier: number): string {
+    for (const color in this.colorCodes) {
+      if (Math.abs(this.colorCodes[color].multiplier - multiplier) < 0.0001) {
+        return color;
+      }
+    }
+    return 'black';
+  }
+
+  clearSelection() {
+    this.manualResistance = '';
+    this.bands = {
+      band1: 'black',
+      band2: 'black',
+      band3: 'black',
+      multiplier: 'black',
+      tolerance: 'gold',
+      tempCoeff: 'brown',
+    };
+    this.calculate();
   }
 }
